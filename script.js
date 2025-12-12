@@ -5,8 +5,7 @@ const DEBTORS_KEY = 'deudas_pendientes_v1';
 let products = [];
 let debtors = []; 
 let currentRate = 40.00;
-// CORRECCIÓN: Declaramos la variable aquí
-let html5QrcodeScanner = null; 
+let html5QrcodeScanner = null;
 let scanMode = null;
 let isScanning = false;
 let cart = {}; 
@@ -81,7 +80,7 @@ window.showSection = function(sectionId) {
 window.openModal = function(id) { document.getElementById(id).classList.add('active'); }
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); }
 
-/** Abre un modal de confirmación personalizado */
+/** NUEVA: Abre un modal de confirmación personalizado */
 window.openConfirmationModal = function(title, message, callback, arg = null) {
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
@@ -207,6 +206,7 @@ window.saveProduct = function(e) {
     resetProductForm();
 }
 
+/** NUEVA: Función que se ejecuta tras la confirmación del modal */
 window.deleteProductConfirmed = function(id) {
     products = products.filter(p => p.id !== id);
     try {
@@ -216,6 +216,7 @@ window.deleteProductConfirmed = function(id) {
     showToast("🗑️ Producto Eliminado");
 }
 
+/** REEMPLAZO: Llama al modal de confirmación en lugar de confirm() */
 window.deleteProduct = function(id) {
     const product = products.find(p => p.id === id);
     openConfirmationModal(
@@ -226,7 +227,7 @@ window.deleteProduct = function(id) {
     );
 }
 
-// --- RENDERIZADO DE PRODUCTOS (CON BOTONES DE ACCIÓN MODIFICADOS) ---
+// --- RENDERIZADO DE PRODUCTOS ---
 window.renderProducts = function(filter = '') {
     const container = document.getElementById('productList');
     const empty = document.getElementById('emptyState');
@@ -245,8 +246,7 @@ window.renderProducts = function(filter = '') {
 
     filtered.forEach(p => {
         const priceBs = (p.priceUSD * currentRate).toFixed(2);
-        // Usar placeholder si no hay imagen, pero evitar el texto para el item en sí si es para la tarjeta
-        const img = p.image || 'data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'150\\' height=\\'140\\' viewBox=\\'0 0 150 140\\'%3E%3Crect width=\\'100%\\' height=\\'100%\\' fill=\\'%23EEEEEE\\'/%3E%3Cline x1=\\'0\\' y1=\\'0\\' x2=\\'150\\' y2=\\'140\\' stroke=\\'%23CCCCCC\\' stroke-width=\\'2\\'/%3E%3Cline x1=\\'150\\' y1=\\'0\\' x2=\\'0\\' y2=\\'140\\' stroke=\\'%23CCCCCC\\' stroke-width=\\'2\\'/%3E%3C/svg%3E';
+        const img = p.image || 'https://via.placeholder.com/150?text=IMG';
         const cartQty = cart[p.id] || 0;
         
         const html = `
@@ -254,6 +254,7 @@ window.renderProducts = function(filter = '') {
                 <div class="card-img-container">
                     <img src="${img}" class="card-img">
                     <div class="card-actions-top"> 
+                        <button class="action-btn edit-btn" onclick="openProductModal(${p.id})"><span class="material-icons" style="font-size: 18px;">edit</span></button>
                         <button class="action-btn delete-btn" onclick="deleteProduct(${p.id})"><span class="material-icons" style="font-size: 18px;">delete</span></button>
                     </div>
                     ${cartQty > 0 ? `<div class="cart-indicator">${cartQty}</div>` : ''}
@@ -266,7 +267,6 @@ window.renderProducts = function(filter = '') {
                         <div class="price-usd">$${p.priceUSD.toFixed(2)}</div>
                         <div class="price-bs">Bs. ${priceBs}</div>
                     </div>
-                    <button class="btn-edit-product" onclick="openProductModal(${p.id})"><span class="material-icons" style="font-size: 16px; vertical-align: bottom;">edit</span> Editar</button>
                     <button class="btn-add-to-cart" onclick="addToCart(${p.id})">🛒 Añadir</button>
                 </div>
             </div>
@@ -286,6 +286,7 @@ window.addToCart = function(productId) {
     showToast(`🛒 Agregado: ${products.find(p => p.id === productId).name}`);
 }
 
+/** NUEVA: Función que se ejecuta tras la confirmación de vaciar carrito */
 window.clearCartConfirmed = function() {
     cart = {};
     renderCart();
@@ -294,8 +295,12 @@ window.clearCartConfirmed = function() {
     showToast("🧹 Carrito vaciado.");
 }
 
+/** REEMPLAZO: Ya no usa confirm() nativo */
 window.clearCart = function() {
-    // La llamada al modal de confirmación se hace ahora desde index.html
+    // La llamada al modal de confirmación se hace ahora desde index.html, 
+    // pero si se llamara directamente desde aquí sería:
+    // openConfirmationModal('Vaciar Carrito', '¿Estás seguro de vaciar el carrito?', clearCartConfirmed);
+    // Para simplificar, la dejaremos en el HTML como está ahora.
 }
 
 window.renderCart = function() {
@@ -363,6 +368,7 @@ window.saveDebtor = function(e) {
     showToast(`👤 Deudor ${name} agregado.`);
 }
 
+/** NUEVA: Función que se ejecuta tras la confirmación de eliminar deudor */
 window.deleteDebtorConfirmed = function(id) {
     debtors = debtors.filter(d => d.id !== id);
     localStorage.setItem(DEBTORS_KEY, JSON.stringify(debtors));
@@ -370,6 +376,7 @@ window.deleteDebtorConfirmed = function(id) {
     showToast("🗑️ Deuda eliminada.");
 }
 
+/** REEMPLAZO: Llama al modal de confirmación en lugar de confirm() */
 window.deleteDebtor = function(id) {
     const debtor = debtors.find(d => d.id === id);
     openConfirmationModal(
@@ -380,7 +387,6 @@ window.deleteDebtor = function(id) {
     );
 }
 
-/** Abre el modal para añadir/modificar ítems a una deuda. (Punto 3: Añadir mini imágenes) */
 window.openDebtItemsModal = function(debtorId) {
     currentDebtorId = debtorId;
     const debtor = debtors.find(d => d.id === debtorId);
@@ -395,15 +401,10 @@ window.openDebtItemsModal = function(debtorId) {
     // Renderiza la lista de productos del INVENTARIO para agregar
     products.forEach(p => {
         const currentQty = debtor.items[p.id] || 0;
-        // Usar la imagen base64 o un SVG de placeholder para la mini imagen
-        const img = p.image || 'data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\' viewBox=\\'0 0 40 40\\'%3E%3Crect width=\\'100%\\' height=\\'100%\\' fill=\\'%23CCCCCC\\'/%3E%3Cline x1=\\'0\\' y1=\\'0\\' x2=\\'40\\' y2=\\'40\\' stroke=\\'%23FFFFFF\\' stroke-width=\\'2\\'/%3E%3Cline x1=\\'40\\' y1=\\'0\\' x2=\\'0\\' y2=\\'40\\' stroke=\\'%23FFFFFF\\' stroke-width=\\'2\\'/%3E%3C/svg%3E';
 
         const html = `
             <div class="product-list-item">
-                <div class="product-info-group">
-                    <img src="${img}" class="debt-item-img">
-                    <span class="product-info">${p.name} ($${p.priceUSD.toFixed(2)})</span>
-                </div>
+                <span class="product-info">${p.name} ($${p.priceUSD.toFixed(2)})</span>
                 <div class="item-quantity-controls">
                     <button onclick="updateDebtorItem(${debtor.id}, ${p.id}, -1)">-</button>
                     <span id="debtQty-${debtor.id}-${p.id}" style="width: 20px; text-align: center;">${currentQty}</span>
@@ -554,11 +555,7 @@ window.startScanner = function(mode) {
     
     document.getElementById('scanTitle').textContent = scanMode === 'search' ? 'Escaneando para Buscar...' : 'Escaneando Código de Barras...';
 
-    // CORRECCIÓN: Inicializamos Html5Qrcode solo si es null
-    if (!html5QrcodeScanner) {
-        html5QrcodeScanner = new Html5Qrcode("reader");
-    }
-
+    html5QrcodeScanner = new Html5Qrcode("reader");
     const config = { 
         fps: 20, 
         qrbox: { width: 250, height: 200 }, 
@@ -580,7 +577,7 @@ window.startScanner = function(mode) {
 window.stopScanner = function() {
     if (html5QrcodeScanner && isScanning) {
         html5QrcodeScanner.stop().then(() => {
-            // No hacemos clear() aquí, solo detenemos, para poder reusar la instancia
+            html5QrcodeScanner.clear();
             isScanning = false;
         }).catch(err => console.error("Error al detener el escáner:", err));
     }
@@ -598,6 +595,7 @@ function onScanSuccess(decodedText) {
     } else {
         const existe = products.some(p => p.code === decodedText);
         if (existe) {
+            // Reemplazado alert() por showToast()
             showToast("⚠️ Producto ya existe. No se puede usar el código.");
         } else {
             document.getElementById('prodCode').value = decodedText;
